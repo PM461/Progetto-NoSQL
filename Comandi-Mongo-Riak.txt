@@ -1,0 +1,125 @@
+--------------------------------------------NODI E CLUSTER MONGODB--------------------------------------------
+# Creazione della rete per Italia
+docker network create ClusterItalia
+
+# Avvio dei container per Italia
+docker run -d -p 27017:27017 --name libreria1 --network mongoClusterItalia mongo:latest mongod --replSet ReplicaSetItalia --bind_ip localhost,libreria1
+docker run -d -p 27018:27017 --name libreria2 --network mongoClusterItalia mongo:latest mongod --replSet ReplicaSetItalia --bind_ip localhost,libreria2
+docker run -d -p 27019:27017 --name libreria3 --network mongoClusterItalia mongo:latest mongod --replSet ReplicaSetItalia --bind_ip localhost,libreria3
+
+
+# Creazione della rete per Francia
+docker network create ClusterFrancia
+
+# Avvio dei container per Francia
+docker run -d -p 27020:27017 --name libreria4 --network mongoClusterFrancia mongo:latest mongod --replSet ReplicaSetFrancia --bind_ip localhost,libreria4
+docker run -d -p 27021:27017 --name libreria5 --network mongoClusterFrancia mongo:latest mongod --replSet ReplicaSetFrancia --bind_ip localhost,libreria5
+docker run -d -p 27022:27017 --name libreria6 --network mongoClusterFrancia mongo:latest mongod --replSet ReplicaSetFrancia --bind_ip localhost,libreria6
+
+
+# Creazione della rete per Germania
+docker network create ClusterGermania
+
+# Avvio dei container per Germania
+docker run -d -p 27023:27017 --name libreria7 --network mongoClusterGermania mongo:latest mongod --replSet ReplicaSetGermania --bind_ip localhost,libreria7
+docker run -d -p 27024:27017 --name libreria8 --network mongoClusterGermania mongo:latest mongod --replSet ReplicaSetGermania --bind_ip localhost,libreria8
+docker run -d -p 27025:27017 --name libreria9 --network mongoClusterGermania mongo:latest mongod --replSet ReplicaSetGermania --bind_ip localhost,libreria9
+
+
+docker exec -it libreria1 mongosh
+
+rs.initiate({
+  _id: "ReplicaSetItalia",
+  members: [
+    { _id: 0, host: "libreria1:27017" },
+    { _id: 1, host: "libreria2:27017" },
+    { _id: 2, host: "libreria3:27017" }
+  ]
+})
+
+### !!ESCI DALLA CONSOLE MONGO DI QUELL'HOST ctrl+C!! ###
+
+docker exec -it libreria4 mongosh
+
+rs.initiate({
+  _id: "ReplicaSetFrancia",
+  members: [
+    { _id: 0, host: "libreria4:27017" },
+    { _id: 1, host: "libreria5:27017" },
+    { _id: 2, host: "libreria6:27017" }
+  ]
+})
+
+### !!ESCI DALLA CONSOLE MONGO DI QUELL'HOST ctrl+C!! ###
+
+docker exec -it libreria7 mongosh
+
+rs.initiate({
+  _id: "ReplicaSetGermania",
+  members: [
+    { _id: 0, host: "libreria7:27017" },
+    { _id: 1, host: "libreria8:27017" },
+    { _id: 2, host: "libreria9:27017" }
+  ]
+})
+
+
+###
+UNA VOLTA FINITO DIRIGITI IN
+C:\Windows\System32\drivers\etc e trova il file hosts alla fine del file appendi queste 3 righe:
+###
+
+127.0.0.1   libreria1
+127.0.0.1   libreria2
+127.0.0.1   libreria3
+
+
+### IN MONGODBCOMPASS connettiti usando questa stringa ###
+
+mongodb://libreria1:27017,libreria2:27017,libreria3:27017/?replicaSet=ReplicaSetItalia
+
+mongodb://libreria4:27017,libreria5:27017,libreria6:27017/?replicaSet=ReplicaSetFrancia
+
+mongodb://libreria7:27017,libreria8:27017,libreria9:27017/?replicaSet=ReplicaSetGermania
+
+
+### MODIFICARE PRIORITA' NODI MONGO ###
+# da cmd
+
+docker exec -it libreria1 mongosh  #sostituire libreria1 con il nodo master attuale
+
+config = rs.conf()
+
+config.members[0].priority = 1
+config.members[1].priority = 0.5
+config.members[2].priority = 0.75
+
+rs.reconfig(config)
+
+
+--------------------------------------------NODI E CLUSTER RIAK--------------------------------------------
+
+# Creazione rete del cluster
+docker create network riakItalia
+
+# Inizializzazione dei container Docker per i nodi Riak
+
+docker run -d --name Italia1 --network riakItalia --hostname Italia1 -p 8087:8087 -p 8098:8098 basho/riak-kv:latest
+docker run -d --name Italia2 --network riakItalia --hostname Italia2 -p 8088:8087 -p 8099:8098 basho/riak-kv:latest
+docker run -d --name Italia3 --network riakItalia --hostname Italia3 -p 8089:8087 -p 8100:8098 basho/riak-kv:latest
+
+# Collegamento in un cluster ring dei tre nodi appena creati
+
+docker exec -it Italia1 riak-admin cluster join riak@$ITALIA2_IP
+docker exec -it Italia1 riak-admin cluster join riak@$ITALIA3_IP
+docker exec -it Italia1 riak-admin cluster plan
+docker exec -it Italia1 riak-admin cluster commit
+
+### RIPETERE CON UNA NUOVA RETE PER I CLUSTER FRANCIA E GERMANIA ### 
+
+
+
+
+
+
+
