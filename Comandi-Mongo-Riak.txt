@@ -10,7 +10,7 @@ docker run -d -p 27019:27017 --name libreria3 --network mongoClusterItalia mongo
 
 # Creazione della rete per Francia
 docker network create ClusterFrancia
-
+#
 # Avvio dei container per Francia
 docker run -d -p 27020:27017 --name libreria4 --network mongoClusterFrancia mongo:latest mongod --replSet ReplicaSetFrancia --bind_ip localhost,libreria4
 docker run -d -p 27021:27017 --name libreria5 --network mongoClusterFrancia mongo:latest mongod --replSet ReplicaSetFrancia --bind_ip localhost,libreria5
